@@ -1,0 +1,14 @@
+- It's like delving in PoE
+- Each room is its own self-contained fight
+  - You are reset to max health/mana/other resources at the start of each fight
+  - Delve deeper for a harder challenge, be careful, there's no going up!
+  - Move sideways to keep grinding on the same difficulty
+- Permadeath, but there are items to help
+  - An item to "go back in time" and restart the fight
+  - An item to randomly teleport you elsewhere (but never down)
+  - (?) Special wearable items that can passively teleport/restart when health < 20%
+  - Because it's permadeath, make sure that there's no 1-hit-kill mechanics anywhere in the game
+  - Because it's permadeath, make sure you don't die due to bad internet -- a bad connection
+    should have the same effect as just starting the fight over again
+- No health recovery or potions by any means, that only encourages one-hit-kill mechanics
+  - Exception: Perhaps a rare unique item that recovers health once-per-fight... so essentially a 100% increased health bonus
