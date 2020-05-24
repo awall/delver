@@ -8,11 +8,13 @@ use opengl_graphics::{GlGraphics, OpenGL};
 use piston::event_loop::*;//{EventSettings, Events};
 use piston::input::*;//{RenderArgs, RenderEvent, UpdateArgs, UpdateEvent, MouseCursorEvent};
 use piston::window::{Window, WindowSettings};
+use graphics::math::{identity};
 
+mod types;
+mod player;
 
-type Angle = f64;
-type WorldPosition = [f64; 2];
-type ScreenPosition = [f64; 2];
+use types::*;
+use player::*;
 
 // According to the "World" coordinates:
 //   - (0,0) is the center of screen
@@ -26,58 +28,50 @@ fn to_world_position(center: ScreenPosition, pos: ScreenPosition) -> WorldPositi
 
 pub struct App {
     gl: GlGraphics,
-    rotation: Angle,
-    position: WorldPosition,
 }
 
 impl App {
-    fn render(&mut self, args: &RenderArgs, center: ScreenPosition) {
+    fn render(&mut self, args: &RenderArgs, center: ScreenPosition, player: &Player) {
         use graphics::*;
 
         const GREEN: [f32; 4] = [0.0, 0.6, 0.0, 1.0];
         const RED: [f32; 4] = [0.8, 0.0, 0.0, 1.0];
         const BLUE: [f32; 4] = [0.0, 0.0, 0.8, 1.0];
+        const WHITE: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
+        const BROWN: [f32; 4] = [0.7, 0.3, 0.0, 1.0];
 
-        let rotation = self.rotation;
-        let [px,py] = self.position;
+        let rotation = player.rotation;
+        let [px,py] = player.position;
         let [cx,cy] = center;
         let [x, y] = [cx + px, cy - py];
 
         self.gl.draw(args.viewport(), |c, gl| {
-            // Clear the screen.
             clear(GREEN, gl);
 
-            let transform = c
+            let screen_transform = c
                 .transform
-                .trans(x, y)
-                .rot_rad(rotation)
-                .trans(-25.0, -25.0);
+                .trans(cx, cy)
+                .flip_v();
 
-            let front = [40.0, 0.0, 10.0, 50.0];
-            let body = [0.0, 0.0, 40.0, 50.0];
+            let player_transform = identity()
+                .trans(px, py)
+                .rot_rad(-rotation)
+                .prepend_transform(screen_transform);
 
-            // Draw a box rotating around the middle of the screen.
-            rectangle(RED, front, transform, gl);
-            rectangle(BLUE, body, transform, gl);
+            let front = [15.0, -25.0, 10.0, 50.0];
+            let sword = [5.0, -5.0, 60.0, 10.0];
+            let body = [-25.0, -25.0, 40.0, 50.0];            
+
+            let pillar = [100.0, 100.0, 50.0, 50.0];
+
+            rectangle(BROWN, pillar, screen_transform, gl);
+
+            rectangle(RED, front, player_transform, gl);
+            rectangle(BLUE, body, player_transform, gl);
+            if player.attacking {
+                rectangle(WHITE, sword, player_transform, gl);
+            }
         });
-    }
-
-    fn update(&mut self, args: &UpdateArgs, walk: bool) {
-        if !walk {
-            return;
-        }
-
-        let x = self.rotation.cos();
-        let y = -self.rotation.sin();
-        self.position[0] += x * 100.0 * args.dt;
-        self.position[1] += y * 100.0 * args.dt;
-    }
-
-    fn rotate_from_pos(&mut self, center: ScreenPosition, pos: ScreenPosition) {
-        let pos = to_world_position(center, pos);
-        let x = pos[0] - self.position[0];
-        let y = pos[1] - self.position[1];
-        self.rotation = -y.atan2(x);
     }
 }
 
@@ -92,12 +86,16 @@ fn main() {
 
     let mut app = App {
         gl: GlGraphics::new(opengl),
-        rotation: 0.0,
-        position: [0.0, 0.0],
     };
 
+    let mut player = Player::new();
     let mut events = Events::new(EventSettings::new());
-    let mut walk = false;
+    let mut dir = Direction {
+        up: false,
+        down: false,
+        left: false,
+        right: false,
+    };
     while let Some(e) = events.next(&mut window) {
         let center = || {
             let size = window.size();
@@ -105,27 +103,53 @@ fn main() {
         };
 
         if let Some(args) = e.render_args() {
-            app.render(&args, center());
+            app.render(&args, center(), &player);
         }
 
         if let Some(args) = e.update_args() {
-            app.update(&args, walk);
+            player.update(args.dt, &dir);
+        }
+
+
+        if let Some(Button::Mouse(button)) = e.press_args() {
+            if MouseButton::Left == button {
+                player.attack();
+            }
         }
 
         if let Some(Button::Keyboard(key)) = e.press_args() {
             if key == Key::W {
-                walk = true;
+                dir.up = true;
+            }
+            if key == Key::S {
+                dir.down = true;
+            }
+            if key == Key::A {
+                dir.left = true;
+            }
+            if key == Key::D {
+                dir.right = true;
             }
         };
 
         if let Some(Button::Keyboard(key)) = e.release_args() {
             if key == Key::W {
-                walk = false;
+                dir.up = false;
+            }
+            if key == Key::S {
+                dir.down = false;
+            }
+            if key == Key::A {
+                dir.left = false;
+            }
+            if key == Key::D {
+                dir.right = false;
             }
         };
 
         e.mouse_cursor(|pos| {
-            app.rotate_from_pos(center(), pos);
+            let pos = to_world_position(center(), pos);
+            player.rotate_from_pos(pos);
         });
     }
 }
