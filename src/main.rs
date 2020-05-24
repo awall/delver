@@ -55,7 +55,7 @@ impl App {
 
             let player_transform = identity()
                 .trans(px, py)
-                .rot_rad(-rotation)
+                .rot_rad(rotation)
                 .prepend_transform(screen_transform);
 
             let front = [15.0, -25.0, 10.0, 50.0];

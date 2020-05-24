@@ -1,5 +1,7 @@
 use crate::types::*;
 
+const NORMAL: bool = true;
+
 pub struct Direction {
     pub up: bool,
     pub down: bool,
@@ -29,7 +31,9 @@ impl Player {
     pub fn rotate_from_pos(&mut self, pos: WorldPosition) {
         let x = pos[0] - self.position[0];
         let y = pos[1] - self.position[1];
-        self.rotation = -y.atan2(x);
+        if !NORMAL {
+            self.rotation = y.atan2(x);
+        }
     }
 
     pub fn attack(&mut self) {
@@ -54,27 +58,39 @@ impl Player {
             } else {
                 self.attack_timer = Some(t);
             }
-        }
+        }        
 
         const VELOCITY: f64 = 250.0;
-        let x = self.rotation.cos();
-        let y = -self.rotation.sin();
+        let x = if NORMAL { 0.0 } else { self.rotation.cos() };
+        let y = if NORMAL { 1.0 } else { -self.rotation.sin() };
 
         if dir.up {
             self.position[0] += x * VELOCITY * dt;
             self.position[1] += y * VELOCITY * dt;
+            if NORMAL {
+                self.rotation = 90f64.to_radians();
+            }
         }
         if dir.down {
-            self.position[0] -= x * VELOCITY * dt * 0.6;
-            self.position[1] -= y * VELOCITY * dt * 0.6;
+            self.position[0] -= x * VELOCITY * dt;
+            self.position[1] -= y * VELOCITY * dt;
+            if NORMAL {
+                self.rotation = -90f64.to_radians();
+            }            
         }
         if dir.left {
-            self.position[0] += -y * VELOCITY * dt * 1.3;
-            self.position[1] += x * VELOCITY * dt * 1.3;
+            self.position[0] += -y * VELOCITY * dt;
+            self.position[1] += x * VELOCITY * dt;
+            if NORMAL {
+                self.rotation = 180f64.to_radians();
+            }
         }
         if dir.right {
-            self.position[0] -= -y * VELOCITY * dt * 1.3;
-            self.position[1] -= x * VELOCITY * dt * 1.3;
+            self.position[0] -= -y * VELOCITY * dt;
+            self.position[1] -= x * VELOCITY * dt;
+            if NORMAL {
+                self.rotation = 0.0;
+            }
         }
     }
 }
